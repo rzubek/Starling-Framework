@@ -168,6 +168,7 @@ package starling.core
         private var mSupport:RenderSupport;
         private var mTouchProcessor:TouchProcessor;
         private var mAntiAliasing:int;
+        private var mProcessTouchEvents:Boolean;
         private var mSimulateMultitouch:Boolean;
         private var mEnableErrorChecking:Boolean;
         private var mLastFrameTimestamp:Number;
@@ -228,6 +229,7 @@ package starling.core
             mTouchProcessor = new TouchProcessor(mStage);
             mJuggler = new Juggler();
             mAntiAliasing = 0;
+            mProcessTouchEvents = false;
             mSimulateMultitouch = false;
             mEnableErrorChecking = false;
             mProfile = profile;
@@ -244,8 +246,7 @@ package starling.core
             stage.align = StageAlign.TOP_LEFT;
             
             // register touch/mouse event handlers            
-            for each (var touchEventType:String in touchEventTypes)
-                stage.addEventListener(touchEventType, onTouch, false, 0, true);
+            this.processTouchEvents = true;
             
             // register other event handlers
             stage.addEventListener(Event.ENTER_FRAME, onEnterFrame, false, 0, true);
@@ -299,9 +300,7 @@ package starling.core
             mStage3D.removeEventListener(Event.CONTEXT3D_CREATE, onContextCreated, false);
             mStage3D.removeEventListener(ErrorEvent.ERROR, onStage3DError, false);
             
-            for each (var touchEventType:String in touchEventTypes)
-                mNativeStage.removeEventListener(touchEventType, onTouch, false);
-            
+            if (mProcessTouchEvents) this.processTouchEvents = false;
             if (mStage) mStage.dispose();
             if (mSupport) mSupport.dispose();
             if (mTouchProcessor) mTouchProcessor.dispose();
@@ -741,7 +740,20 @@ package starling.core
         /** Returns the actual height (in pixels) of the back buffer. This can differ from the
          *  height of the viewPort rectangle if it is partly outside the native stage. */
         public function get backBufferHeight():int { return mClippedViewPort.height; }
-        
+
+        /** Indicates if touch processing is enabled or completely disabled. 
+         *  @default true */
+        public function get processTouchEvents():Boolean { return mProcessTouchEvents; }
+        public function set processTouchEvents(value:Boolean) :void {
+            mProcessTouchEvents = value;
+            for each (var touchEventType:String in touchEventTypes) {
+                if (value) 
+                    mNativeStage.addEventListener(touchEventType, onTouch, false, 0, true);
+                else 
+                    mNativeStage.removeEventListener(touchEventType, onTouch);
+            }
+        }
+		
         /** Indicates if multitouch simulation with "Shift" and "Ctrl"/"Cmd"-keys is enabled. 
          *  @default false */
         public function get simulateMultitouch():Boolean { return mSimulateMultitouch; }
